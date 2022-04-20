@@ -31,7 +31,8 @@ yarn dev
 <br>
   
 path aliasの設定(モジュールの import で相対パスしか使えないと辛いので、パスエイリアスを設定しておきます。)
-```diff
+```diff JSON:aaa.json
+//tsconfig.json
 {
  "compilerOptions": {
    "target": "es5",
@@ -159,6 +160,7 @@ ESLint と Prettier が干渉しないように、ESLint 側に設定を追加�
 ```
 //.prettierrc
 {
+    "editor.formatOnSave": true, //保存時にフォーマット
     "trailingComma": "all",// 末尾のカンマあり
     "tabWidth": 2,// tab の長さは半角スペース 2 つ
     "semi": true,// セミコロンあり
@@ -170,6 +172,7 @@ ESLint と Prettier が干渉しないように、ESLint 側に設定を追加�
 ```
 // package.json
   "prettier": {
+    "editor.formatOnSave": true, //保存時にフォーマット
     "trailingComma": "all",// 末尾のカンマあり
     "tabWidth": 2,// tab の長さは半角スペース 2 つ
     "semi": true,// セミコロンあり
@@ -181,4 +184,71 @@ ESLint と Prettier が干渉しないように、ESLint 側に設定を追加�
 <br>
 
 # CSS Moduleの導入
-Next.js で標準サポートされている
+Next.js で標準サポートされている。<br>
+stylesディレクトリ内を下記のように分ける
+<br>
+```
+styles/global.scss
+```
+- ここにグローバルに（アプリ全体で）読み込みたいスタイルを書く。
+- _app.tsxでimport styles/global.scssするだけで読み込み設定は完了。
+
+<br>
+
+```
+styles/components
+```
+- コンポーネント用の.module.scssを入れてく
+
+
+<br>
+
+# Sass(Scss)の導入
+sassのインストール
+```
+yarn add sass
+```
+scssの使用例（css moduleなので〇〇.module.scssでファイルを作成する）
+```
+//src/styles/testpage.module.scss
+p {
+  &.scss_test {
+    font-size: 3em;
+  }
+}
+```
+
+```
+//src/pages/index.tsx
+import Head from 'next/head'
+import styles from '../styles/testpage.module.scss'
+
+export default function Home() {
+  return (
+    <div className="container">
+      <Head>
+        <title>Create Next App</title>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <main>
+        <h1 className="title">
+          Welcome to <a href="https://nextjs.org">Next.js!</a>
+        </h1>
+
+        <p className={styles.scss_test}>
+          Scss Test
+        </p>
+
+        <p className="description">
+          Get started by editing <code>pages/testpage.tsx</code>
+        </p>
+{/* 〜中略〜 */}
+      </main>
+{/* 〜中略〜 */}
+    </div>
+  )
+}
+```
+<br>
+
