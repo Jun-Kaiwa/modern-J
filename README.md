@@ -3,6 +3,9 @@ yarnがインストールされているか
 ```
 yarn -v
 ```
+Linux環境を整えたばかりであればnpmのインストールなどをしてからyarnのインストールへ<br>
+[npmインストール](https://docs.microsoft.com/ja-jp/windows/dev-environment/javascript/nodejs-on-wsl)
+
 <br>
 
 yarnのインストール
@@ -106,7 +109,6 @@ yarn add -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser
 ```diff
 {
 -  "extends": "next/core-web-vitals"
-+  "extends": "next/core-web-vitals"
 +  "extends": [
 +    "next/core-web-vitals",
 +    "plugin:import/recommended",
@@ -223,11 +225,11 @@ p {
 }
 ```
 
-```
+```diff
 //src/pages/index.tsx
 
 import Head from 'next/head'
-import styles from '../styles/testpage.module.scss'
++ import styles from '../styles/testpage.module.scss'
 
 export default function Home() {
   return (
@@ -242,9 +244,9 @@ export default function Home() {
           Welcome to <a href="https://nextjs.org">Next.js!</a>
         </h1>
 
-        <p className={styles.scss_test}>
-          Scss Test
-        </p>
++        <p className={styles.scss_test}>
++          Scss Test
++        </p>
 
         <p className="description">
           Get started by editing <code>pages/testpage.tsx</code>
@@ -256,6 +258,7 @@ export default function Home() {
   )
 }
 ```
+ブラウザで「Scss Test」と表示されれば設定完了
 <br>
 
 # Ant Designの導入　
@@ -416,7 +419,7 @@ const Home: NextPage = () => {
 ブラウザに表示できていれば設定完了です
 ![スクリーンショット 2022-04-21 152714](https://user-images.githubusercontent.com/103023532/164388146-d5a3953b-1fcb-4ec5-a243-67c2bef17cb8.png)
 
-# husky + lint-stagedの導入
+# ×husky + lint-stagedの導入
 パッケージのインストール
 ```
 yarn add --dev husky lint-staged
@@ -535,99 +538,6 @@ chmod a+x .husky/pre-push
 
 <br>
 
-## husky + lint-stagedの動作確認
-動作確認用のファイルとして、test.tsとtest.tsxファイルを用意して、ファイル内に整形されていない汚いコードを記述する。
-src/index.tsxファイル内に、誤った形で関数の呼び出しを行う。（型チェックが行われるかみるため）
-```
-//src/test.ts
-
-
-export const hello = (name: string) => {
-
-
-console.log(name)
-}
-
-
-export const hello2 = (name: string) => {
-
-
-  console.log(name)
-  }
-
-
-  export const hello3 = (name: string) => {
-
-
-    console.log(name)
-    }
-    export const hello4 = (name: string) => {
-
-
-      console.log(name)
-      }
-```
-
-<br>
-
-```
-//src/test.tsx
-
-export const hello = (name: string) => {
-
-
-console.log(name)
-}
-
-
-export const hello2 = (name: string) => {
-
-
-  console.log(name)
-  }
-
-
-  export const hello3 = (name: string) => {
-
-
-    console.log(name)
-    }
-    export const hello4 = (name: string) => {
-
-
-      console.log(name)
-      }
-```
-
-<br>
-
-```
-//src/index.tsx
-
-import { NextPage } from 'next'
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
-
-// 追加
-import { hello } from './test-for-tsx'
-
-const Home: NextPage = () => {
-
-// 追加
-// hello()の引数にはstring型を指定しているが
-// あえてnumber型を入れて型エラーになることをチェックする
-+ hello(12)
-
-  return (
-    <div className={styles.container}>
-      // ...
-    </div>
-  )
-}
-
-export default Home
-```
-
 ## git commitのチェック
 ```
 # stagingに上げる
@@ -681,5 +591,106 @@ $ tsc --noEmit
 ✨  Done in 1.45s.
 ```
                             
+# Jestの導入
+## ライブラリのインストール
+```
+yarn add -D jest @testing-library/react @testing-library/jest-dom
+```
 
+<br>
 
+## 設定ファイルの作成
+```
+//jest.config.js
+
+const createJestConfig = nextJest({
+  // next.config.jsとテスト環境用の.envファイルが配置されたディレクトリをセット。基本は"./"で良い。
+  dir: "./",
+});
+
+// Jestのカスタム設定を設置する場所。従来のプロパティはここで定義。
+const customJestConfig = {
+  // jest.setup.jsを作成する場合のみ定義。
+  // setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  moduleNameMapper: {
+    // aliasを定義 （tsconfig.jsonのcompilerOptions>pathsの定義に合わせる）
+    "^@/components/(.*)$": "<rootDir>/components/$1",
+    "^@/pages/(.*)$": "<rootDir>/pages/$1",
+  },
+  testEnvironment: "jest-environment-jsdom",
+};
+
+// createJestConfigを定義することによって、本ファイルで定義された設定がNext.jsの設定に反映されます
+module.exports = createJestConfig(customJestConfig);
+
+```
+
+## テストを書いて動かしてみる
+```
+//src/components/Sample.tsx
+
+export const Sample = () => {
+  return (
+    <main>
+      <h1>Nextjs+Jestのサンプルサプリ</h1>
+      <p>設定がすごく楽になりました。</p>
+    </main>
+  );
+};
+```
+
+<br>
+
+```
+//src/components/__tests__/Sample.spec.tsx
+
+import { Sample } from "@/components/Sample";
+import { render } from "@testing-library/react";
+
+describe("Sampleコンポーネント", () => {
+  test("should first", () => {
+    const { getByText } = render(<Sample />);
+    expect(getByText("Nextjs+Jestのサンプルサプリ")).toBeTruthy();
+    expect(getByText("設定がすごく楽になりました。")).toBeTruthy();
+  });
+});
+```
+
+<br>
+
+```diff
+//package.json
+
+{
+ "scripts": {
+   "dev": "next dev",
+   "build": "next build",
+   "start": "next start",
++   "test": "jest --watch",
+   "lint": "next lint"
+ },
+}
+```
+
+<br>
+
+```
+yarn test
+```
+テストによってエラーが出る。
+下記のように直すとテストが通ります。
+```diff
+//src/components/__tests__/Sample.spec.tsx
+
+- import { Sample } from "@/components/Sample";
++ import { Sample } from "../Sample";
+import { render } from "@testing-library/react";
+
+describe("Sampleコンポーネント", () => {
+  test("should first", () => {
+    const { getByText } = render(<Sample />);
+    expect(getByText("Nextjs+Jestのサンプルサプリ")).toBeTruthy();
+    expect(getByText("設定がすごく楽になりました。")).toBeTruthy();
+  });
+});
+```
