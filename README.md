@@ -419,178 +419,136 @@ const Home: NextPage = () => {
 ブラウザに表示できていれば設定完了です
 ![スクリーンショット 2022-04-21 152714](https://user-images.githubusercontent.com/103023532/164388146-d5a3953b-1fcb-4ec5-a243-67c2bef17cb8.png)
 
-# ×husky + lint-stagedの導入
+<br>
+
+# husky + lint-stagedの導入
 パッケージのインストール
 ```
-yarn add --dev husky lint-staged
+yarn add -D husky lint-staged
 ```
 
 <br>
 
-lint-stagedの設定
-```diff
-//pakcage.json
+huskyの初期設定をする。
+```
+npx husky-init && yarn
+```
+
+<br>
+
+最終的なpackage.jsonは以下のようになる。
+```
+// package.json
 
 {
- // ...
- "dependencies": {
-   // ... 
- }
- "devDependencies": {
-   //...
- },
-+ "lint-staged": {
-+   "*.{ts,tsx}": [
-+     "yarn lint",
-+     "yarn format",
-+     "yarn lint:fix"
-+   ]
-+ }
-}
-```
-
-<br>
-
-huskyの設定
-コマンドを実行することで、husky.shファイルを含む.huskyフォルダをトップレベルディレクトリ配下に作成します。
-```
-yarn husky install
-```
-
-<br>
-
-package.jsonのscriptsのprespareにhusky installを設定します。
-```diff
-//pakcage.json
-
-{
-
- // ...
-
+  "name": "next-ts-eslint-prettier-husky-lint-staged",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-+   "prepare": "husky install",
-
-    // ...
-
- },
- 
- // ...
- 
+    "lint": "next lint",
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "next": "12.0.7",
+    "react": "17.0.2",
+    "react-dom": "17.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "17.0.0",
+    "@types/react": "17.0.37",
+    "@typescript-eslint/eslint-plugin": "^5.7.0",
+    "@typescript-eslint/parser": "^5.7.0",
+    "eslint": "8.4.1",
+    "eslint-config-next": "12.0.7",
+    "eslint-config-prettier": "^8.3.0",
+    "husky": "^7.0.0",
+    "lint-staged": "^12.1.2",
+    "prettier": "^2.5.1",
+    "typescript": "4.5.4"
+  }
 }
 ```
+
 <br>
 
-## pre-commitで実行するscriptsを設定
-git commit直前にこれらを実行させるためのscriptsを設定していきます。
-上記で作成した.huskyディレクトリ配下にpre-commitというファイルを作成して、その中に設定を記述します。
-```
-touch .husky/pre-commit
-
-code .husky/pre-commit
-```
-<br>
-
-commit前にlint-stagedを実行するよう設定します
+.husky/pre-commitを書き換える
 ```
 //.husky/pre-commit
 
 #!/bin/sh
-# $0はこのファイルを指します
-."$(dirmname "$0")/_/husky.sh"
+. "$(dirname "$0")/_/husky.sh"
 
-# yarn lint-stagedを実行
 yarn lint-staged
 ```
 
 <br>
 
-## pre-pushで実行するscriptsを設定
-git push直前の実行させるためのscriptsを設定していきます。<br>
-pre-commit同様、.huskyディレクトリ配下にpre-pushファイルを作成し、その中に設定を記述します
+.eslintrc.jsonを下記のようにする
 ```
-touch .husky/pre-push
+//.eslintrc.json
 
-code .husky/pre-push
-```
-
-<br>
-
-pushの直前に型チェック(check-types)を実行するよう設定
-```
-//.husky/pre-push
-# $0はこのファイルを指します
-."$(dirname "$0")/_/husky.sh"
-
-# yarn check-typesを実行
-yarn check-types
-```
-
-<br>
-
-## pre-commit, pre-pushファイルの実行権限を変更
-```
-chmod a+x .husky/pre-commit
-chmod a+x .husky/pre-push
+{
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+        "next/core-web-vitals",
+        "plugin:import/recommended",
+        "plugin:import/warnings",
+        "prettier"
+      ],
+      "rules": {
+        "import/order": [
+          "error",
+          {
+            "alphabetize": {
+              "order": "asc"
+            }
+          }
+        ]
+      }
+}
 ```
 
 <br>
 
-## git commitのチェック
+.lintstagedrc.jsを作成
 ```
-# stagingに上げる
-git add .
-
-git commit -m "check pre-commit"
-
-# .husky/pre-commitに設定したscriptsが走る/
-yarn run v1.22.4
-$ /Users/username/new-app/node_modules/.bin/lint-staged
-✔ Preparing...
-✔ Running tasks...
-✔ Applying modifications...
-✔ Cleaning up...
-✨  Done in 4.18s.
-[main .....] check pre-commit
+// .lintstagedrc.js
+module.exports = {
+  '**/*.{js,jsx,ts,tsx}': [
+    (filenames) =>
+      `next lint --fix --file ${filenames
+        .map((file) => file.split(process.cwd())[1])
+        .join(' --file ')}`,
+    'prettier --write',
+  ],
+}
 ```
 
-<br>
+## 動作の確認
 
-scirptsが実行された結果、Doneと表示されていれば正常に動作したということになります。<br>
-上記で作成したtest.ts, test.tsxファイル（インデントなどバラバラのコード）は、コード整形などがされているはずですので、確認してみてください。
-
-<br>
-
-## git pushのチェック
+index.tsxに下記コードを挿入する。
 ```
-git push
+//src/pages/index.tsx
 
-# .husky/pre-pushに設定したscriptsが走る
-yarn run v1.22.4
-$ tsc --noEmit
-src/pages/index.tsx:7:9 - error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-
-7   hello(12)
-          ~~
-
-Found 1 error.
+<a href="/">home</a>
 ```
 
 <br>
 
-Found 1 error.となり型のチェックがなされている。<br>
-型チェックが成功すると、以下のようにDoneと表示され、GitHubのリモートブランチへpushされる。
+git add、git commitをすると次のエラーが表示される。<br>
+ESLint エラーとなり husky によってコミットが中断する。
 ```
-git push
+Do not use the HTML <a> tag to navigate to /events/. Use Link from ‘next/link’ instead. <br>
+See: https://nextjs.org/docs/messages/no-html-link-for-pages.eslint@next/next/no-html-link-for-pages
+```
 
-# .husky/pre-pushに設定したscriptsが走る
-yarn run v1.22.4
-$ tsc --noEmit
-✨  Done in 1.45s.
-```
-                            
+index.tsxをもとに戻して再度git add、git commitをしてコミットできることを確認する。
+ 
+<br> 
+ 
 # Jestの導入
 ## ライブラリのインストール
 ```
@@ -602,6 +560,8 @@ yarn add -D jest @testing-library/react @testing-library/jest-dom
 ## 設定ファイルの作成
 ```
 //jest.config.js
+
+const nextJest = require("next/jest");
 
 const createJestConfig = nextJest({
   // next.config.jsとテスト環境用の.envファイルが配置されたディレクトリをセット。基本は"./"で良い。
